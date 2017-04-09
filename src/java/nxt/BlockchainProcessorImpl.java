@@ -1370,6 +1370,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private boolean addGenesisBlock() {
+        Logger.logInfoMessage("Genesis Block ID is:" + Genesis.GENESIS_BLOCK_ID);
+        // 2017-04-08 20:28:18 INFO: Genesis Block ID is:3444294670862540038
         if (BlockDb.hasBlock(Genesis.GENESIS_BLOCK_ID, 0)) {
             Logger.logMessage("Genesis block already in database");
             BlockImpl lastBlock = BlockDb.findLastBlock();
@@ -1423,11 +1425,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                                                    // version   timestamp    previousblock    AmountNQT         totalFee      //payload length
                     digest.digest(), 8628161281313630310L, new byte[32], Genesis.GENESIS_BLOCK_SIGNATURE,
                 //  payloadhash      generatorID                 gen sig       block Sig
-                    null, BigInteger.ZERO, 0,0L, 0, 1,
+                    null, BigInteger.ZERO, 0,0L, 0, Genesis.GENESIS_BLOCK_ID,
                 //  previosuhash         diff                baseTarget, nextBlockID     height   id
                     transactions, 0L, new byte[0]);
                 // transactions        nonce       bytesAT
-            //byteATs
+
             Logger.logInfoMessage("Ready to addBlock(genesisBlock)");
             addBlock(genesisBlock);
             Logger.logInfoMessage("Genesis Block added successfully");

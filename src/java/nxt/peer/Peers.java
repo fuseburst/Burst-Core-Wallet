@@ -372,9 +372,11 @@ public final class Peers {
                     entries.forEach(entry -> {
                         Future<String> unresolvedAddress = peersService.submit(() -> {
                             PeerImpl peer = Peers.findOrCreatePeer(entry.getAddress(), true);
+                            //Logger.logInfoMessage("Added Peer to pool:" + entry.getAddress());
                             if (peer != null) {
                                 peer.setLastUpdated(entry.getLastUpdated());
                                 peer.setServices(entry.getServices());
+                                Logger.logInfoMessage("Adding peer:" + entry.getAddress());
                                 Peers.addPeer(peer);
                                 return null;
                             }
@@ -981,6 +983,7 @@ public final class Peers {
 
     public static boolean addPeer(Peer peer) {
         if (peers.put(peer.getHost(), (PeerImpl) peer) == null) {
+            Logger.logInfoMessage("Notifying listeners about " + peer.getHost());
             listeners.notify(peer, Event.NEW_PEER);
             return true;
         }
@@ -996,6 +999,7 @@ public final class Peers {
 
     public static void connectPeer(Peer peer) {
         peer.unBlacklist();
+        Logger.logInfoMessage("Trying to connect to peer: " + peer.getHost());
         ((PeerImpl)peer).connect();
     }
 
@@ -1117,6 +1121,7 @@ public final class Peers {
         if (version == null) {
             return true;
         }
+        Logger.logInfoMessage("Min Version Check is:" + minVersion);
         if (version.endsWith("e")) {
             version = version.substring(0, version.length() - 1);
         }
@@ -1125,11 +1130,14 @@ public final class Peers {
             try {
                 int v = Integer.parseInt(versions[i]);
                 if (v > minVersion[i]) {
+                    Logger.logInfoMessage("isOldVersion returning false");
                     return false;
                 } else if (v < minVersion[i]) {
+                    Logger.logInfoMessage("isOldVersion returning true");
                     return true;
                 }
             } catch (NumberFormatException e) {
+                Logger.logInfoMessage("isOldVersion returning true");
                 return true;
             }
         }

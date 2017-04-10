@@ -162,6 +162,7 @@ public final class PeerServlet extends WebSocketServlet {
         //
         // Return the response
         //
+        Logger.logInfoMessage("A peer is talking to us, were going to say:" + jsonResponse);
         resp.setContentType("text/plain; charset=UTF-8");
         try (CountingOutputWriter writer = new CountingOutputWriter(resp.getWriter())) {
             JSON.writeJSONString(jsonResponse, writer);
@@ -255,10 +256,12 @@ public final class PeerServlet extends WebSocketServlet {
         //
         // Process the request
         //
+        Logger.logInfoMessage("Peers.addPeer(" + peer.getHost()+ ")");
         try (CountingInputReader cr = new CountingInputReader(inputReader, Peers.MAX_REQUEST_SIZE)) {
             JSONObject request = (JSONObject)JSONValue.parseWithException(cr);
             peer.updateDownloadedVolume(cr.getCount());
-            if (request.get("protocol") == null || ((Number)request.get("protocol")).intValue() != 1) {
+            //if (request.get("protocol") == null || ((Number)request.get("protocol")).intValue() != 1) { NXT Check
+            if (request.get("protocol") != null && ((String)request.get("protocol")).equals("B1")) { // Burst check
                 Logger.logDebugMessage("Unsupported protocol " + request.get("protocol"));
                 return UNSUPPORTED_PROTOCOL;
             }

@@ -89,11 +89,15 @@ final class PeerImpl implements Peer {
     private volatile BlockchainState blockchainState;
 
     PeerImpl(String host, String announcedAddress) {
+        Logger.logInfoMessage("PeerImpl Fired:" + host);
         this.host = host;
         this.announcedAddress = announcedAddress;
         try {
             this.port = new URI("http://" + announcedAddress).getPort();
-        } catch (URISyntaxException ignore) {}
+            Logger.logInfoMessage("Hooked onto: " + announcedAddress);
+        } catch (URISyntaxException ignore) {
+            Logger.logErrorMessage(ignore.toString());
+        }
         this.state = State.NON_CONNECTED;
         this.shareAddress = true;
         this.webSocket = new PeerWebSocket();
@@ -160,11 +164,13 @@ final class PeerImpl implements Peer {
     }
 
     void setVersion(String version) {
+        Logger.logInfoMessage("Checking Version");
         if (version != null && version.length() > Peers.MAX_VERSION_LENGTH) {
             throw new IllegalArgumentException("Invalid version length: " + version.length());
         }
         boolean versionChanged = version == null || !version.equals(this.version);
         this.version = version;
+        Logger.logInfoMessage("Version checked was:" + version);
         isOldVersion = false;
         if (Nxt.APPLICATION.equals(application)) {
             isOldVersion = Peers.isOldVersion(version, Constants.MIN_VERSION);
@@ -469,7 +475,8 @@ final class PeerImpl implements Peer {
             // Create a new WebSocket session if we don't have one
             //
             if (useWebSocket && !webSocket.isOpen())
-                useWebSocket = webSocket.startClient(URI.create("ws://" + host + ":" + getPort() + "/nxt"));
+                //useWebSocket = webSocket.startClient(URI.create("ws://" + host + ":" + getPort() + "/nxt"));
+                useWebSocket = webSocket.startClient(URI.create("ws://" + host + ":" + getPort() + "/burst"));
             //
             // Send the request and process the response
             //
@@ -498,7 +505,8 @@ final class PeerImpl implements Peer {
                 //
                 // Send the request using HTTP
                 //
-                URL url = new URL("http://" + host + ":" + getPort() + "/nxt");
+                //URL url = new URL("http://" + host + ":" + getPort() + "/nxt");
+                URL url = new URL("http://" + host + ":" + getPort() + "/burst");
                 if (communicationLoggingMask != 0)
                     log = "\"" + url.toString() + "\": " + JSON.toString(request);
                 connection = (HttpURLConnection) url.openConnection();
@@ -508,6 +516,7 @@ final class PeerImpl implements Peer {
                 connection.setReadTimeout(Peers.readTimeout);
                 connection.setRequestProperty("Accept-Encoding", "gzip");
                 connection.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
+                Logger.logInfoMessage("Sending Request to:" + url);
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))) {
                     CountingOutputWriter cow = new CountingOutputWriter(writer);
                     request.writeJSONString(cow);
@@ -615,6 +624,7 @@ final class PeerImpl implements Peer {
         try {
             if (!Peers.ignorePeerAnnouncedAddress && announcedAddress != null) {
                 try {
+                    Logger.logInfoMessage("Trying to connect to:"+announcedAddress);
                     URI uri = new URI("http://" + announcedAddress);
                     InetAddress inetAddress = InetAddress.getByName(uri.getHost());
                     if (!inetAddress.equals(InetAddress.getByName(host))) {
@@ -628,6 +638,7 @@ final class PeerImpl implements Peer {
                         return;
                     }
                 } catch (URISyntaxException | UnknownHostException e) {
+                    Logger.logErrorMessage("Caught Fault during connection");
                     blacklist(e);
                     return;
                 }
@@ -636,6 +647,7 @@ final class PeerImpl implements Peer {
             if (response != null) {
                 if (response.get("error") != null) {
                     setState(State.NON_CONNECTED);
+                    Logger.logErrorMessage("Response Error during connection");
                     return;
                 }
                 String servicesString = (String)response.get("services");
@@ -692,7 +704,7 @@ final class PeerImpl implements Peer {
                         return;
                     }
                 }
-                
+                Logger.logInfoMessage("Checking for old version");
                 if (!isOldVersion) {
                     setState(State.CONNECTED);
                     if (services != origServices) {
@@ -706,6 +718,7 @@ final class PeerImpl implements Peer {
                 setState(State.NON_CONNECTED);
             }
         } catch (RuntimeException e) {
+            Logger.logErrorMessage("Blacklisted at the End!");
             blacklist(e);
         }
     }
